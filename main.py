@@ -3,6 +3,7 @@ IoT Node Placement Simulator - FastAPI Backend
 Optimizing Gateway-Based IoT Node Placement using Differential Evolution
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -24,9 +25,21 @@ app = FastAPI(
 )
 
 # Configure CORS
+allowed_origins = [
+    "http://localhost:3000", 
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001"
+]
+
+# Add production frontend URL from environment variable if available
+frontend_url = os.environ.get("FRONTEND_URL")
+if frontend_url:
+    allowed_origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -324,4 +337,18 @@ async def get_api_info():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    
+    # Use PORT environment variable for deployment compatibility (e.g., Render, Heroku)
+    port = int(os.environ.get("PORT", 8000))
+    
+    # In production, disable reload
+    is_development = os.environ.get("ENVIRONMENT", "development") == "development"
+    
+    print(f"🚀 Starting IoT Node Placement Simulator API on port {port}")
+    
+    uvicorn.run(
+        "main:app", 
+        host="0.0.0.0", 
+        port=port, 
+        reload=is_development
+    )
